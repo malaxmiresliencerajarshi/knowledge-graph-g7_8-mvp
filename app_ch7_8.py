@@ -209,7 +209,7 @@ if selected_concept:
     st.sidebar.markdown(f"### {selected_concept}")
 
     # -------- Concept details dropdown --------
-    with st.sidebar.expander("📘 Concept Details", expanded=True):
+    with st.sidebar.expander("📘 Concept Details", expanded=False):
         st.markdown("**Brief Explanation**")
         st.write(concept.get("brief_explanation", "—"))
 
@@ -254,3 +254,4 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
