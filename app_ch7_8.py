@@ -13,18 +13,43 @@ st.set_page_config(
 # ----------------------------
 # Load data
 # ----------------------------
-with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
+@st.cache_data
+def load_all_data():
+    with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
+        grade7 = json.load(f)
+
+    with open("data/grade8_knowledge_base.json", "r", encoding="utf-8") as f:
+        grade8 = json.load(f)
+
+    return {
+        "7": grade7,
+        "8": grade8
+    }
+
+ALL_DATA = load_all_data()
+
+st.sidebar.markdown("## 📘 Curriculum")
+
+grade = st.sidebar.radio(
+    "Select Grade",
+    ["7", "8"],
+    horizontal=True
+)
+
+data = ALL_DATA[grade]
 
 concepts = data["concepts"]
 activities = data["activities"]
 
-concept_map = {c["concept_name"]: c for c in concepts}
-concept_names = set(concept_map.keys())
-
 # ----------------------------
 # Session state
 # ----------------------------
+
+if "selected_concept" in st.session_state:
+    if st.session_state.selected_concept not in {
+        c["concept_name"] for c in concepts
+    }:
+        st.session_state.selected_concept = None
 if "selected_concept" not in st.session_state:
     st.session_state.selected_concept = None
 
@@ -227,5 +252,6 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
