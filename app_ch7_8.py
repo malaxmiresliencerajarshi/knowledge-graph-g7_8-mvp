@@ -220,7 +220,7 @@ if selected_concept:
     st.sidebar.markdown("**Cognitive Level**")
     st.sidebar.write(concept.get("cognitive_level", "—"))
 
-   # ----------------------------
+# ----------------------------
 # Mark as learned (grade-scoped)
 # ----------------------------
 learned = selected_concept in st.session_state.learned_concepts[grade]
@@ -252,6 +252,7 @@ else:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
 
