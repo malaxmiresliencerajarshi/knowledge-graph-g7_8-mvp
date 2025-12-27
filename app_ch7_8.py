@@ -121,17 +121,24 @@ for (domain, strand) in strands:
 # Concept nodes
 for c in concepts:
     concept_name = c["concept_name"]
+    domain = c["domain"]
+    domain_color = DOMAIN_COLORS.get(domain, "#999999")
+
     has_activity = concept_name in concepts_with_activities
 
-    nodes.append(Node(
-        id=f"concept::{concept_name}",
-        label=concept_name,
-        shape="dot",
-        size=18,
-        color=DOMAIN_COLORS,                     # SAME domain color
-        borderColor="#1f2937" if has_activity else DOMAIN_COLORS,
-        borderWidth=3 if has_activity else 1,
-    ))
+    nodes.append(
+        Node(
+            id=f"concept::{concept_name}",
+            label=concept_name,
+            shape="dot",
+            size=18,
+            color=domain_color,                       # ✅ correct
+            borderColor="#111827" if has_activity else domain_color,
+            borderWidth=3 if has_activity else 1,
+            font={"size": 12}
+        )
+    )
+
 
 # ----------------------------
 # Build edges
@@ -266,6 +273,7 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
 
