@@ -167,8 +167,8 @@ clicked = agraph(nodes=nodes, edges=edges, config=config)
 # ------------------------------------------------------------
 selected_concept = None
 
-if clicked and isinstance(clicked, dict):
-    node_id = clicked.get("id", "")
+if clicked and isinstance(clicked, list) and len(clicked) > 0:
+    node_id = clicked[0].get("id", "")
     if node_id.startswith("concept::"):
         selected_concept = node_id.replace("concept::", "")
         st.session_state.selected_concept = selected_concept
@@ -217,3 +217,4 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
