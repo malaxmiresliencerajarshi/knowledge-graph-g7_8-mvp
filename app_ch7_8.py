@@ -169,14 +169,18 @@ clicked = agraph(
 # -----------------------------
 # Handle click
 # -----------------------------
-if clicked and isinstance(clicked, list):
-    for item in clicked:
-        node_id = item.get("id", "")
+result = agraph(
+    nodes=nodes,
+    edges=edges,
+    config=config
+)
+
+if result and isinstance(result, dict):
+    clicked_nodes = result.get("nodes", [])
+    if clicked_nodes:
+        node_id = clicked_nodes[0].get("id", "")
         if node_id.startswith("concept::"):
             st.session_state.selected_concept = node_id.replace("concept::", "")
-            break
-
-selected = st.session_state.selected_concept
 
 # -----------------------------
 # Sidebar – Concept details
@@ -217,4 +221,5 @@ if selected and selected in concept_map:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
