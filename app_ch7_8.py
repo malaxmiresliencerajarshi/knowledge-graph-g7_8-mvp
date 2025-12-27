@@ -189,12 +189,31 @@ for c in concepts:
 # ==================================================
 config = Config(
     width="100%",
-    height=750,
+    height=800,
     directed=False,
     physics=True,
     nodeHighlightBehavior=True,
-    highlightColor="#F7A7A6"
+    highlightColor="#F7A7A6",
+
+    # 🔥 SPACING CONTROL
+    physics_config={
+        "forceAtlas2Based": {
+            "gravitationalConstant": -80,
+            "centralGravity": 0.01,
+            "springLength": 180,
+            "springConstant": 0.05,
+            "avoidOverlap": 1.0
+        },
+        "maxVelocity": 30,
+        "minVelocity": 0.1,
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": True,
+            "iterations": 150
+        }
+    }
 )
+
 
 # ==================================================
 # Render graph
@@ -282,3 +301,4 @@ with st.sidebar.expander("📊 Learning Progress", expanded=False):
         st.markdown(f"**{domain}**")
         st.progress(percent / 100)
         st.caption(f"{percent}% completed")
+
