@@ -137,20 +137,33 @@ config = Config(
 # Render graph + FIX node click behavior
 # --------------------------------------------------
 selected = agraph(
+    key="concept_graph",
     nodes=nodes,
     edges=edges,
     config=config
 )
 
-# Normalize agraph selection (CRITICAL FIX)
+# --------------------------------------------------
+# Normalize agraph selection (FINAL, COMPLETE)
+# --------------------------------------------------
 normalized_selection = None
 
-if isinstance(selected, list) and len(selected) > 0:
+if isinstance(selected, dict):
+    # agraph sometimes returns {"nodes": [...], "edges": [...]}
+    nodes_selected = selected.get("nodes", [])
+    if nodes_selected:
+        normalized_selection = nodes_selected[0]
+
+elif isinstance(selected, list) and selected:
     normalized_selection = selected[0]
+
 elif isinstance(selected, str):
     normalized_selection = selected
 
+# Update session state ONLY if valid
 if normalized_selection in concept_names:
     st.session_state["selected_concept"] = normalized_selection
 elif selected is None:
     st.session_state["selected_concept"] = None
+
+
