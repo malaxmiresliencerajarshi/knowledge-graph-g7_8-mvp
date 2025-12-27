@@ -220,16 +220,17 @@ if selected_concept:
     st.sidebar.markdown("**Cognitive Level**")
     st.sidebar.write(concept.get("cognitive_level", "—"))
 
-    # ----------------------------
-    # Mark as learned
-    # ----------------------------
-    learned = selected_concept in st.session_state.learned_concepts[grade]
-    checked = st.sidebar.checkbox(
-        "✅ Mark concept as learned",
-        value=learned
-    )
+   # ----------------------------
+# Mark as learned (grade-scoped)
+# ----------------------------
+learned = selected_concept in st.session_state.learned_concepts[grade]
 
-    if checked:
+checked = st.sidebar.checkbox(
+    "✅ Mark concept as learned",
+    value=learned
+)
+
+if checked:
     st.session_state.learned_concepts[grade].add(selected_concept)
 else:
     st.session_state.learned_concepts[grade].discard(selected_concept)
@@ -251,6 +252,7 @@ else:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
 
