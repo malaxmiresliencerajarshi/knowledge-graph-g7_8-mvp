@@ -42,16 +42,14 @@ def compute_domain_progress(concepts, learned_store, grade):
     domain_learned = {}
 
     for c in concepts:
-        domain = c["domain"]
-        domain_totals[domain] = domain_totals.get(domain, 0) + 1
+        domain_totals[c["domain"]] = domain_totals.get(c["domain"], 0) + 1
 
     for domain, learned_list in learned_store.get(grade, {}).items():
         domain_learned[domain] = len(set(learned_list))
 
     progress = {}
-    for domain in domain_totals:
+    for domain, total in domain_totals.items():
         learned = domain_learned.get(domain, 0)
-        total = domain_totals[domain]
         progress[domain] = round((learned / total) * 100, 1)
 
     return progress
@@ -91,8 +89,7 @@ concept_names = set(concept_map.keys())
 # Learned state init
 # ==================================================
 learned_store = load_learned_concepts()
-if grade not in learned_store:
-    learned_store[grade] = {}
+learned_store.setdefault(grade, {})
 
 # ==================================================
 # Session state (click stability)
@@ -103,7 +100,7 @@ elif st.session_state.selected_concept not in concept_names:
     st.session_state.selected_concept = None
 
 # ==================================================
-# Build hierarchy (Domain → Strand → Concept)
+# Build hierarchy
 # ==================================================
 domains = {}
 strands = {}
@@ -117,56 +114,51 @@ concepts_with_activities = {
 }
 
 # ==================================================
-# Build nodes
+# Nodes
 # ==================================================
 nodes = []
 
-# Domain nodes
 for domain in domains:
     nodes.append(Node(
         id=f"domain::{domain}",
         label=domain,
         shape="box",
         size=45,
-        color=DOMAIN_COLORS.get(domain, "#999999"),
+        color=DOMAIN_COLORS.get(domain),
         font={"size": 18, "bold": True, "color": "white"}
     ))
 
-# Strand nodes
 for (domain, strand) in strands:
     nodes.append(Node(
         id=f"strand::{strand}",
         label=strand,
         shape="ellipse",
         size=28,
-        color=DOMAIN_COLORS.get(domain, "#bbbbbb"),
+        color=DOMAIN_COLORS.get(domain),
         font={"size": 14}
     ))
 
-# Concept nodes
 for c in concepts:
-    concept_name = c["concept_name"]
+    name = c["concept_name"]
     domain = c["domain"]
-    domain_color = DOMAIN_COLORS.get(domain, "#999999")
-    has_activity = concept_name in concepts_with_activities
+    has_activity = name in concepts_with_activities
 
     nodes.append(Node(
-        id=f"concept::{concept_name}",
-        label=concept_name,
+        id=f"concept::{name}",
+        label=name,
         shape="dot",
         size=18,
-        color=domain_color,
-        borderColor="#111827" if has_activity else domain_color,
+        color=DOMAIN_COLORS.get(domain),
+        borderColor="#111827" if has_activity else DOMAIN_COLORS.get(domain),
         borderWidth=3 if has_activity else 1,
         font={"size": 12}
     ))
 
 # ==================================================
-# Build edges
+# Edges
 # ==================================================
 edges = []
 
-# Domain → Strand
 for domain, strand_set in domains.items():
     for strand in strand_set:
         edges.append(Edge(
@@ -175,16 +167,14 @@ for domain, strand_set in domains.items():
             color="#cccccc"
         ))
 
-# Strand → Concept
-for (domain, strand), concept_list in strands.items():
-    for concept in concept_list:
+for (domain, strand), clist in strands.items():
+    for c in clist:
         edges.append(Edge(
             source=f"strand::{strand}",
-            target=f"concept::{concept}",
+            target=f"concept::{c}",
             color="#dddddd"
         ))
 
-# Concept ↔ Concept (interconnections)
 for c in concepts:
     for linked in c.get("interconnections", []):
         if linked in concept_names:
@@ -202,7 +192,6 @@ config = Config(
     height=750,
     directed=False,
     physics=True,
-    hierarchical=False,
     nodeHighlightBehavior=True,
     highlightColor="#F7A7A6"
 )
@@ -214,9 +203,7 @@ st.title(f"📘 NCERT Knowledge Graph — Grade {grade}")
 
 selected = agraph(nodes=nodes, edges=edges, config=config)
 
-# ==================================================
-# Normalize click (DO NOT TOUCH)
-# ==================================================
+# Normalize click
 clicked = None
 if isinstance(selected, dict) and selected.get("nodes"):
     clicked = selected["nodes"][0]
@@ -229,7 +216,7 @@ if isinstance(clicked, str) and clicked.startswith("concept::"):
     st.session_state.selected_concept = clicked.replace("concept::", "")
 
 # ==================================================
-# Sidebar — Concept & Activity Details
+# Sidebar — Concept details
 # ==================================================
 st.sidebar.markdown("## 🔍 Concept Details")
 
@@ -237,20 +224,22 @@ selected_concept = st.session_state.selected_concept
 
 if selected_concept:
     concept = concept_map[selected_concept]
+    domain = concept["domain"]
+
     st.sidebar.markdown(f"### {selected_concept}")
 
     with st.sidebar.expander("📘 Concept Details", expanded=False):
-        st.markdown("**Brief Explanation**")
+        st.write("**Brief Explanation**")
         st.write(concept.get("brief_explanation", "—"))
 
-        st.markdown("**Chapter References**")
+        st.write("**Chapter References**")
         for ch in concept.get("chapter_references", []):
             st.write(f"• {ch}")
 
-        st.markdown("**Concept Type**")
+        st.write("**Concept Type**")
         st.write(concept.get("concept_type", "—"))
 
-        st.markdown("**Cognitive Level**")
+        st.write("**Cognitive Level**")
         st.write(concept.get("cognitive_level", "—"))
 
     linked_activities = [
@@ -260,18 +249,15 @@ if selected_concept:
     with st.sidebar.expander(f"🧪 Activity Details ({len(linked_activities)})"):
         if linked_activities:
             for a in linked_activities:
-                st.markdown(f"**{a.get('activity_name', '—')}**")
-                st.write(f"• Activity Type: {a.get('activity_type', '—')}")
-                st.write(f"• Learning Goal: {a.get('learning_goal', '—')}")
+                st.markdown(f"**{a.get('activity_name')}**")
+                st.write(f"• Activity Type: {a.get('activity_type')}")
+                st.write(f"• Learning Goal: {a.get('learning_goal')}")
                 st.markdown("---")
         else:
-            st.write("No activities linked to this concept.")
+            st.write("No activities linked.")
 
-    # Persisted checkbox
-    concept_domain = concept["domain"]
-    learned_store.setdefault(grade, {}).setdefault(concept_domain, [])
-
-    already_learned = selected_concept in learned_store[grade][concept_domain]
+    learned_store[grade].setdefault(domain, [])
+    already_learned = selected_concept in learned_store[grade][domain]
 
     mark_learned = st.sidebar.checkbox(
         "✅ Mark concept as learned",
@@ -279,26 +265,20 @@ if selected_concept:
         key=f"learned_{grade}_{selected_concept}"
     )
 
-    # ----------------------------
-# Sidebar — Learning Progress
-# ----------------------------
-st.sidebar.markdown("## 📊 Learning Progress")
-
-progress = compute_domain_progress(concepts, learned_store, grade)
-
-for domain, percent in progress.items():
-    st.sidebar.markdown(f"**{domain}**")
-    st.sidebar.progress(percent / 100)
-    st.sidebar.caption(f"{percent}% completed")
-
     if mark_learned and not already_learned:
-        learned_store[grade][concept_domain].append(selected_concept)
+        learned_store[grade][domain].append(selected_concept)
         save_learned_concepts(learned_store)
 
     if not mark_learned and already_learned:
-        learned_store[grade][concept_domain].remove(selected_concept)
+        learned_store[grade][domain].remove(selected_concept)
         save_learned_concepts(learned_store)
 
-else:
-    st.sidebar.info("Click a concept node to view details.")
-
+# ==================================================
+# Sidebar — Learning progress (DROPDOWN)
+# ==================================================
+with st.sidebar.expander("📊 Learning Progress", expanded=False):
+    progress = compute_domain_progress(concepts, learned_store, grade)
+    for domain, percent in progress.items():
+        st.markdown(f"**{domain}**")
+        st.progress(percent / 100)
+        st.caption(f"{percent}% completed")
