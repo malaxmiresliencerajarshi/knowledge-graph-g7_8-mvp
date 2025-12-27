@@ -2,219 +2,218 @@ import json
 import streamlit as st
 from streamlit_agraph import agraph, Node, Edge, Config
 
-# ------------------------------------------------------------
+# -----------------------------
 # Page config
-# ------------------------------------------------------------
-st.set_page_config(page_title="NCERT Knowledge Graph", layout="wide")
+# -----------------------------
+st.set_page_config(layout="wide", page_title="NCERT Knowledge Graph")
 
-# ------------------------------------------------------------
-# Load data (Grade 7 + Grade 8 embedded)
-# ------------------------------------------------------------
-with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
-    grade7_data = json.load(f)
+# -----------------------------
+# Load data (both grades in code)
+# -----------------------------
+with open("grade7_knowledge_base.json", "r", encoding="utf-8") as f:
+    grade7 = json.load(f)
 
-with open("data/grade8_knowledge_base.json", "r", encoding="utf-8") as f:
-    grade8_data = json.load(f)
+with open("grade8_knowledge_base.json", "r", encoding="utf-8") as f:
+    grade8 = json.load(f)
 
 DATA_BY_GRADE = {
-    7: grade7_data,
-    8: grade8_data
+    7: grade7,
+    8: grade8
 }
 
-# ------------------------------------------------------------
+# -----------------------------
+# Domain color theme (single color flows down)
+# -----------------------------
+DOMAIN_COLORS = {
+    "Physics (The Physical World)": "#2563eb",       # Deep Blue
+    "Chemistry (The World of Matter)": "#16a34a",    # Green
+    "Biology (The Living World)": "#ea580c",         # Orange
+    "Earth & Space Science": "#7c3aed",              # Purple
+    "Scientific Inquiry & Investigative Process": "#6b7280"  # Grey
+}
+
+# -----------------------------
 # Sidebar – Grade selector
-# ------------------------------------------------------------
-st.sidebar.markdown("## Select Grade")
+# -----------------------------
+st.sidebar.header("Select Grade")
 grade = st.sidebar.radio("Grade", [7, 8], horizontal=True)
 
 data = DATA_BY_GRADE[grade]
 concepts = data["concepts"]
+activities = data.get("activities", [])
 
-# ------------------------------------------------------------
-# Color theme (domain → strand → concept)
-# ------------------------------------------------------------
-DOMAIN_COLORS = {
-    "Physics (The Physical World)": "#2563EB",       # Deep Blue
-    "Chemistry (The World of Matter)": "#16A34A",    # Green
-    "Biology (The Living World)": "#EA580C",         # Orange
-    "Earth & Space Science": "#7C3AED",              # Purple
-    "Scientific Inquiry & Investigative Process": "#6B7280"  # Grey
-}
-
-# ------------------------------------------------------------
-# Build lookups
-# ------------------------------------------------------------
-concept_lookup = {c["concept_name"]: c for c in concepts}
-concept_names = set(concept_lookup.keys())
-
-domains = sorted(set(c["domain"] for c in concepts))
-strands = sorted(set(c["strand"] for c in concepts))
-
-# ------------------------------------------------------------
+# -----------------------------
 # Session state
-# ------------------------------------------------------------
+# -----------------------------
 if "selected_concept" not in st.session_state:
     st.session_state.selected_concept = None
 
-if "learned_concepts" not in st.session_state:
-    st.session_state.learned_concepts = {7: set(), 8: set()}
+if "learned" not in st.session_state:
+    st.session_state.learned = set()
 
-# ------------------------------------------------------------
-# Graph nodes & edges
-# ------------------------------------------------------------
+# -----------------------------
+# Helper maps
+# -----------------------------
+concept_map = {c["concept_name"]: c for c in concepts}
+
+activities_by_concept = {}
+for a in activities:
+    parent = a.get("parent_concept")
+    if parent:
+        activities_by_concept.setdefault(parent, []).append(a)
+
+# -----------------------------
+# Build graph
+# -----------------------------
 nodes = []
 edges = []
 
-# ---- Domain nodes (RECTANGLE – BIG)
-for domain in domains:
+# ---- Domains (RECTANGLE, BIG, behind)
+domains = sorted(set(c["domain"] for c in concepts))
+
+for d in domains:
+    color = DOMAIN_COLORS.get(d, "#64748b")
     nodes.append(Node(
-        id=f"domain::{domain}",
-        label=domain,
+        id=f"domain::{d}",
+        label=d.replace(" (", "\n("),
         shape="box",
-        size=60,
-        color=DOMAIN_COLORS.get(domain, "#9CA3AF"),
-        font={"size": 20, "color": "white"}
+        size=90,
+        level=0,
+        color=color,
+        font={"size": 18, "color": "white"}
     ))
 
-# ---- Strand nodes (ELLIPSE – MEDIUM)
-for strand in strands:
-    domain = next(c["domain"] for c in concepts if c["strand"] == strand)
+# ---- Strands (ELLIPSE, medium)
+strands = sorted(set((c["domain"], c["strand"]) for c in concepts))
+
+for domain, strand in strands:
     nodes.append(Node(
-        id=f"strand::{strand}",
+        id=f"strand::{domain}::{strand}",
         label=strand,
         shape="ellipse",
-        size=40,
-        color=DOMAIN_COLORS.get(domain, "#9CA3AF"),
-        font={"size": 16, "color": "white"}
+        size=45,
+        level=1,
+        color=DOMAIN_COLORS.get(domain, "#64748b"),
+        font={"size": 14, "color": "white"}
     ))
 
     edges.append(Edge(
         source=f"domain::{domain}",
-        target=f"strand::{strand}",
-        color="#CBD5E1",
-        width=1
+        target=f"strand::{domain}::{strand}",
+        color="#cbd5f5"
     ))
 
-# ---- Concept nodes (DOT – SMALL)
+# ---- Concepts (DOTS, small, clickable)
 for c in concepts:
+    name = c["concept_name"]
     domain = c["domain"]
-    concept_id = c["concept_name"]
+    strand = c["strand"]
 
-    border_width = 3 if c.get("activities") else 1
+    has_activity = name in activities_by_concept
+    border = "#111827" if has_activity else DOMAIN_COLORS.get(domain)
 
     nodes.append(Node(
-        id=f"concept::{concept_id}",
-        label=concept_id,
+        id=f"concept::{name}",
+        label=name,
         shape="dot",
-        size=18,
-        color=DOMAIN_COLORS.get(domain, "#9CA3AF"),
-        borderWidth=border_width,
-        borderColor="#111827",
-        font={"size": 12}
+        size=22,
+        level=2,
+        color=DOMAIN_COLORS.get(domain),
+        borderWidth=3 if has_activity else 1,
+        borderColor=border
     ))
 
     edges.append(Edge(
-        source=f"strand::{c['strand']}",
-        target=f"concept::{concept_id}",
-        color="#E5E7EB",
-        width=1
+        source=f"strand::{domain}::{strand}",
+        target=f"concept::{name}",
+        color="#94a3b8"
     ))
 
-# ---- Concept ↔ Concept links
-for c in concepts:
+    # Concept ↔ Concept links
     for linked in c.get("interconnections", []):
-        if linked in concept_names:
+        if linked in concept_map:
             edges.append(Edge(
-                source=f"concept::{c['concept_name']}",
+                source=f"concept::{name}",
                 target=f"concept::{linked}",
-                color="#FCA5A5",
-                width=1
+                color="#fca5a5"
             ))
 
-# ------------------------------------------------------------
-# Graph config
-# ------------------------------------------------------------
+# -----------------------------
+# Graph config (CLICK SAFE)
+# -----------------------------
 config = Config(
-    width="100%",
-    height=720,
+    width=1200,
+    height=750,
     directed=False,
     physics=True,
     hierarchical=False,
-    nodeHighlightBehavior=True,
-    highlightColor="#F59E0B",
     interaction={
         "hover": True,
         "selectable": True,
-        "multiselect": False,
-        "dragNodes": True,
-        "dragView": True,
-        "zoomView": True
+        "multiselect": False
     }
 )
 
-# ------------------------------------------------------------
-# Title
-# ------------------------------------------------------------
-st.markdown("## 📘 NCERT Knowledge Graph")
-
-# ------------------------------------------------------------
+# -----------------------------
 # Render graph
-# ------------------------------------------------------------
-clicked = agraph(nodes=nodes, edges=edges, config=config)
+# -----------------------------
+st.title("📘 NCERT Knowledge Graph")
 
-# ------------------------------------------------------------
-# Handle click (ONLY concepts)
-# ------------------------------------------------------------
-selected_concept = None
+clicked = agraph(
+    nodes=nodes,
+    edges=edges,
+    config=config,
+    return_value="nodes"   # 🔑 REQUIRED
+)
 
-if clicked and isinstance(clicked, list) and len(clicked) > 0:
-    node_id = clicked[0].get("id", "")
-    if node_id.startswith("concept::"):
-        selected_concept = node_id.replace("concept::", "")
-        st.session_state.selected_concept = selected_concept
+# -----------------------------
+# Handle click
+# -----------------------------
+if clicked and isinstance(clicked, list):
+    for item in clicked:
+        node_id = item.get("id", "")
+        if node_id.startswith("concept::"):
+            st.session_state.selected_concept = node_id.replace("concept::", "")
+            break
 
-# ------------------------------------------------------------
+selected = st.session_state.selected_concept
+
+# -----------------------------
 # Sidebar – Concept details
-# ------------------------------------------------------------
-st.sidebar.markdown("## 🔍 Concept Details")
+# -----------------------------
+st.sidebar.markdown("## 🔎 Concept Details")
 
-selected_concept = st.session_state.selected_concept
+if selected and selected in concept_map:
+    c = concept_map[selected]
 
-if selected_concept:
-    concept = concept_lookup[selected_concept]
+    st.sidebar.subheader(selected)
+    st.sidebar.write(c.get("brief_explanation", ""))
+    st.sidebar.markdown(f"**Concept Type:** {c.get('concept_type', '-')}")
+    st.sidebar.markdown(f"**Cognitive Level:** {c.get('cognitive_level', '-')}")
+    st.sidebar.markdown("**Chapters:**")
+    for ch in c.get("chapter_references", []):
+        st.sidebar.write(f"• {ch}")
 
-    with st.sidebar.expander("📖 Concept Information", expanded=True):
-        st.markdown(f"**Brief Explanation**")
-        st.write(concept["brief_explanation"])
-
-        st.markdown(f"**Chapter References**")
-        st.write(concept["chapter_references"])
-
-        st.markdown(f"**Concept Type**")
-        st.write(concept["concept_type"])
-
-        st.markdown(f"**Cognitive Level**")
-        st.write(concept["cognitive_level"])
-
-    if concept.get("activities"):
-        with st.sidebar.expander("🧪 Learning Activities", expanded=False):
-            for a in concept["activities"]:
-                st.markdown(f"**{a['activity_name']}**")
-                st.write(f"Type: {a['activity_type']}")
-                st.write(f"Goal: {a['learning_goal']}")
-                st.divider()
-
-    learned = selected_concept in st.session_state.learned_concepts[grade]
-    checked = st.sidebar.checkbox(
-        "✔ Mark concept as learned",
-        value=learned
+    st.sidebar.checkbox(
+        "Mark concept as learned",
+        value=selected in st.session_state.learned,
+        key=f"learn_{selected}",
+        on_change=lambda: (
+            st.session_state.learned.add(selected)
+            if st.session_state.get(f"learn_{selected}")
+            else st.session_state.learned.discard(selected)
+        )
     )
 
-    if checked:
-        st.session_state.learned_concepts[grade].add(selected_concept)
-    else:
-        st.session_state.learned_concepts[grade].discard(selected_concept)
+    # ---- Activities dropdown
+    acts = activities_by_concept.get(selected, [])
+    if acts:
+        with st.sidebar.expander("📌 Learning Activities"):
+            for a in acts:
+                st.markdown(f"**{a['activity_name']}**")
+                st.write(f"Type: {a.get('activity_type','-')}")
+                st.write(f"Goal: {a.get('learning_goal','-')}")
+                st.divider()
 
 else:
     st.sidebar.info("Click a concept node to view details.")
-
