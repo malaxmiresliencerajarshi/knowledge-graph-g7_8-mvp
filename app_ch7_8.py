@@ -6,7 +6,7 @@ from streamlit_agraph import agraph, Node, Edge, Config
 # Page config
 # ----------------------------
 st.set_page_config(
-    page_title="NCERT Grade 7 – Knowledge Graph",
+    page_title="NCERT Grades 7–8 – Knowledge Graph",
     layout="wide"
 )
 
@@ -47,16 +47,13 @@ concept_names = set(concept_map.keys())
 # Session state
 # ----------------------------
 
-if "selected_concept" in st.session_state:
-    if st.session_state.selected_concept not in {
-        c["concept_name"] for c in concepts
-    }:
-        st.session_state.selected_concept = None
 if "selected_concept" not in st.session_state:
+    st.session_state.selected_concept = None
+elif st.session_state.selected_concept not in concept_names:
     st.session_state.selected_concept = None
 
 if "learned_concepts" not in st.session_state:
-    st.session_state.learned_concepts = set()
+    st.session_state.learned_concepts = {"7": set(), "8": set()}
 
 # ----------------------------
 # Build Tier 1 & Tier 2 structure
@@ -177,7 +174,7 @@ config = Config(
 # ----------------------------
 # UI layout
 # ----------------------------
-st.markdown("## 📘 NCERT Grade 7 – Knowledge Graph")
+st.markdown(f"## 📘 NCERT Grade {grade} – Knowledge Graph")
 
 selected = agraph(nodes=nodes, edges=edges, config=config)
 
@@ -226,16 +223,16 @@ if selected_concept:
     # ----------------------------
     # Mark as learned
     # ----------------------------
-    learned = selected_concept in st.session_state.learned_concepts
+    learned = selected_concept in st.session_state.learned_concepts[grade]
     checked = st.sidebar.checkbox(
         "✅ Mark concept as learned",
         value=learned
     )
 
     if checked:
-        st.session_state.learned_concepts.add(selected_concept)
-    else:
-        st.session_state.learned_concepts.discard(selected_concept)
+    st.session_state.learned_concepts[grade].add(selected_concept)
+else:
+    st.session_state.learned_concepts[grade].discard(selected_concept)
 
     # ----------------------------
     # Activities (lightweight)
@@ -254,6 +251,7 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
 
