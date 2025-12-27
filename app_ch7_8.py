@@ -10,10 +10,10 @@ st.set_page_config(layout="wide")
 # -------------------------------------------------
 # Load data
 # -------------------------------------------------
-with open("grade7_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
     g7 = json.load(f)
 
-with open("grade8_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade8_knowledge_base.json", "r", encoding="utf-8") as f:
     g8 = json.load(f)
 
 DATA = {"7": g7, "8": g8}
@@ -202,3 +202,4 @@ if st.session_state.selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
