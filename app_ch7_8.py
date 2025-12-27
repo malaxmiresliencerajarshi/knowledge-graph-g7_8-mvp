@@ -23,10 +23,10 @@ DOMAIN_COLORS = {
 # --------------------------------------------------
 # Load data (Grade 7 + Grade 8)
 # --------------------------------------------------
-with open("grade7_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
     grade7_data = json.load(f)
 
-with open("grade8_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade8_knowledge_base.json", "r", encoding="utf-8") as f:
     grade8_data = json.load(f)
 
 # --------------------------------------------------
@@ -214,3 +214,4 @@ else:
         st.session_state.learned_concepts[grade].add(selected)
     else:
         st.session_state.learned_concepts[grade].discard(selected)
+
