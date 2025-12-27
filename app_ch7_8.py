@@ -10,10 +10,10 @@ st.set_page_config(layout="wide", page_title="NCERT Knowledge Graph")
 # -----------------------------
 # Load data (both grades in code)
 # -----------------------------
-with open("grade7_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade7_knowledge_base.json", "r", encoding="utf-8") as f:
     grade7 = json.load(f)
 
-with open("grade8_knowledge_base.json", "r", encoding="utf-8") as f:
+with open("data/grade8_knowledge_base.json", "r", encoding="utf-8") as f:
     grade8 = json.load(f)
 
 DATA_BY_GRADE = {
@@ -217,3 +217,4 @@ if selected and selected in concept_map:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
