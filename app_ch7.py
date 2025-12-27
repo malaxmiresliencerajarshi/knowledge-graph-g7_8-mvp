@@ -22,26 +22,17 @@ def load_data():
 
 data = load_data()
 concepts = data.get("concepts", [])
-activities = data.get("activities", [])
+raw_activities = data.get("activities", [])
 
 concept_names = {c["concept_name"] for c in concepts}
 
 # --------------------------------------------------
-# Strictly clean activities (FINAL)
+# Clean activities (STRICT)
 # --------------------------------------------------
-raw_activities = data.get("activities", [])
-
-clean_activities = []
-for i, a in enumerate(raw_activities):
-    if not isinstance(a, dict):
-        continue
-    if "activity_name" not in a:
-        continue
-    if "parent_concept" not in a:
-        continue
-    clean_activities.append(a)
-
-activities = clean_activities
+activities = []
+for a in raw_activities:
+    if isinstance(a, dict) and "activity_name" in a and "parent_concept" in a:
+        activities.append(a)
 
 # --------------------------------------------------
 # Sidebar – Concept details
@@ -50,7 +41,7 @@ st.sidebar.header("🔍 Concept Details")
 
 selected_concept = st.session_state.get("selected_concept")
 
-if selected_concept is not None:
+if selected_concept and selected_concept in concept_names:
     concept = next(
         (c for c in concepts if c["concept_name"] == selected_concept),
         None
@@ -73,24 +64,22 @@ if selected_concept is not None:
         st.sidebar.markdown("**Cognitive Level**")
         st.sidebar.write(concept.get("cognitive_level", "—"))
 
-        # Linked activities
         st.sidebar.markdown("**Activities**")
         linked_activities = [
             a for a in activities
-            if a.get("parent_concept") == selected_concept
+            if a["parent_concept"] == selected_concept
         ]
 
         if linked_activities:
             for a in linked_activities:
-                st.sidebar.write(f"• {a.get('activity_name')}")
+                st.sidebar.write(f"• {a['activity_name']}")
         else:
             st.sidebar.write("No activities linked.")
-
 else:
     st.sidebar.info("Click a concept node to view details.")
 
 # --------------------------------------------------
-# Sidebar – Data Quality Check (SAFE)
+# Sidebar – Data Quality Check
 # --------------------------------------------------
 st.sidebar.markdown("---")
 st.sidebar.header("🧪 Data Check")
@@ -108,8 +97,6 @@ if unlinked_activities:
         )
 else:
     st.sidebar.success("All activities are properly linked")
-st.sidebar.markdown("### 🔎 Activity Type Check")
-st.sidebar.write([type(a) for a in activities][:10])
 
 # --------------------------------------------------
 # Build graph (Tier-3 concepts only)
@@ -147,7 +134,7 @@ config = Config(
 )
 
 # --------------------------------------------------
-# Render graph
+# Render graph + FIX node click behavior
 # --------------------------------------------------
 selected = agraph(
     nodes=nodes,
@@ -155,8 +142,15 @@ selected = agraph(
     config=config
 )
 
-# Always overwrite selection (prevents sticky state)
-st.session_state["selected_concept"] = selected
+# Normalize agraph selection (CRITICAL FIX)
+normalized_selection = None
 
+if isinstance(selected, list) and len(selected) > 0:
+    normalized_selection = selected[0]
+elif isinstance(selected, str):
+    normalized_selection = selected
 
-
+if normalized_selection in concept_names:
+    st.session_state["selected_concept"] = normalized_selection
+elif selected is None:
+    st.session_state["selected_concept"] = None
