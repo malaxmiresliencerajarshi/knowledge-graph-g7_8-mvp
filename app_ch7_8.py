@@ -95,17 +95,6 @@ if grade not in learned_store:
     learned_store[grade] = {}
 
 # ==================================================
-# Sidebar — Progress
-# ==================================================
-st.sidebar.markdown("## 📊 Learning Progress")
-
-progress = compute_domain_progress(concepts, learned_store, grade)
-for domain, percent in progress.items():
-    st.sidebar.markdown(f"**{domain}**")
-    st.sidebar.progress(percent / 100)
-    st.sidebar.caption(f"{percent}% completed")
-
-# ==================================================
 # Session state (click stability)
 # ==================================================
 if "selected_concept" not in st.session_state:
@@ -290,6 +279,18 @@ if selected_concept:
         key=f"learned_{grade}_{selected_concept}"
     )
 
+    # ----------------------------
+# Sidebar — Learning Progress
+# ----------------------------
+st.sidebar.markdown("## 📊 Learning Progress")
+
+progress = compute_domain_progress(concepts, learned_store, grade)
+
+for domain, percent in progress.items():
+    st.sidebar.markdown(f"**{domain}**")
+    st.sidebar.progress(percent / 100)
+    st.sidebar.caption(f"{percent}% completed")
+
     if mark_learned and not already_learned:
         learned_store[grade][concept_domain].append(selected_concept)
         save_learned_concepts(learned_store)
@@ -300,3 +301,4 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
