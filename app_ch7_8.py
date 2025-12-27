@@ -198,11 +198,11 @@ config = Config(
     # 🔥 SPACING CONTROL
     physics_config={
         "forceAtlas2Based": {
-            "gravitationalConstant": -80,
+            "gravitationalConstant": -150,
             "centralGravity": 0.01,
             "springLength": 180,
             "springConstant": 0.05,
-            "avoidOverlap": 1.0
+            "avoidOverlap": 2.0
         },
         "maxVelocity": 30,
         "minVelocity": 0.1,
@@ -301,4 +301,5 @@ with st.sidebar.expander("📊 Learning Progress", expanded=False):
         st.markdown(f"**{domain}**")
         st.progress(percent / 100)
         st.caption(f"{percent}% completed")
+
 
