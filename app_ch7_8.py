@@ -40,6 +40,8 @@ data = ALL_DATA[grade]
 
 concepts = data["concepts"]
 activities = data["activities"]
+concept_map = {c["concept_name"]: c for c in concepts}
+concept_names = set(concept_map.keys())
 
 # ----------------------------
 # Session state
@@ -252,6 +254,7 @@ if selected_concept:
 
 else:
     st.sidebar.info("Click a concept node to view details.")
+
 
 
 
