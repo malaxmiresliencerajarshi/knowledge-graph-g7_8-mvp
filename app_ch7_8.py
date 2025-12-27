@@ -28,6 +28,9 @@ def load_all_data():
 
 ALL_DATA = load_all_data()
 
+# ----------------------------
+# Sidebar — Grade selection
+# ----------------------------
 st.sidebar.markdown("## 📘 Curriculum")
 
 grade = st.sidebar.radio(
@@ -46,7 +49,6 @@ concept_names = set(concept_map.keys())
 # ----------------------------
 # Session state
 # ----------------------------
-
 if "selected_concept" not in st.session_state:
     st.session_state.selected_concept = None
 elif st.session_state.selected_concept not in concept_names:
@@ -66,7 +68,7 @@ for c in concepts:
     strands.setdefault((c["domain"], c["strand"]), []).append(c["concept_name"])
 
 # ----------------------------
-# Colors (Domain-based)
+# Domain colors
 # ----------------------------
 DOMAIN_COLORS = {
     "Physics (The Physical World)": "#1f77b4",
@@ -81,7 +83,7 @@ DOMAIN_COLORS = {
 # ----------------------------
 nodes = []
 
-# Tier 1 — Domain anchors
+# Domain nodes
 for domain in domains:
     nodes.append(
         Node(
@@ -94,7 +96,7 @@ for domain in domains:
         )
     )
 
-# Tier 2 — Strand anchors
+# Strand nodes
 for (domain, strand) in strands:
     nodes.append(
         Node(
@@ -107,7 +109,7 @@ for (domain, strand) in strands:
         )
     )
 
-# Tier 3 — Concept nodes
+# Concept nodes
 for c in concepts:
     nodes.append(
         Node(
@@ -129,21 +131,21 @@ for domain, strand_list in domains.items():
     for strand in strand_list:
         edges.append(
             Edge(
-    source=f"domain::{domain}",
-    target=f"strand::{strand}",
-    color="#cccccc"
-)
+                source=f"domain::{domain}",
+                target=f"strand::{strand}",
+                color="#cccccc"
+            )
         )
 
 # Strand → Concept
 for (domain, strand), concept_list in strands.items():
     for concept in concept_list:
         edges.append(
-           Edge(
-    source=f"strand::{strand}",
-    target=f"concept::{concept}",
-    color="#dddddd"
-)
+            Edge(
+                source=f"strand::{strand}",
+                target=f"concept::{concept}",
+                color="#dddddd"
+            )
         )
 
 # Concept ↔ Concept (interconnections)
@@ -152,10 +154,10 @@ for c in concepts:
         if linked in concept_names:
             edges.append(
                 Edge(
-    source=f"concept::{c['concept_name']}",
-    target=f"concept::{linked}",
-    color="#ff9999"
-)
+                    source=f"concept::{c['concept_name']}",
+                    target=f"concept::{linked}",
+                    color="#ff9999"
+                )
             )
 
 # ----------------------------
@@ -172,14 +174,14 @@ config = Config(
 )
 
 # ----------------------------
-# UI layout
+# Main graph
 # ----------------------------
 st.markdown(f"## 📘 NCERT Grade {grade} – Knowledge Graph")
 
 selected = agraph(nodes=nodes, edges=edges, config=config)
 
 # ----------------------------
-# Normalize click result
+# Normalize click result (DO NOT TOUCH)
 # ----------------------------
 clicked = None
 
@@ -205,25 +207,23 @@ if selected_concept:
     concept = concept_map[selected_concept]
 
     st.sidebar.markdown(f"### {selected_concept}")
-    st.sidebar.write(concept["brief_explanation"])
 
-    st.sidebar.markdown("**Domain**")
-    st.sidebar.write(concept["domain"])
+    # -------- Concept details dropdown --------
+    with st.sidebar.expander("📘 Concept Details", expanded=True):
+        st.markdown("**Brief Explanation**")
+        st.write(concept.get("brief_explanation", "—"))
 
-    st.sidebar.markdown("**Strand**")
-    st.sidebar.write(concept["strand"])
+        st.markdown("**Chapter References**")
+        for ch in concept.get("chapter_references", []):
+            st.write(f"• {ch}")
 
-    st.sidebar.markdown("**Chapters**")
-    for ch in concept.get("chapter_references", []):
-        st.sidebar.write(f"• {ch}")
+        st.markdown("**Concept Type**")
+        st.write(concept.get("concept_type", "—"))
 
-    st.sidebar.markdown("**Cognitive Level**")
-    st.sidebar.write(concept.get("cognitive_level", "—"))
+        st.markdown("**Cognitive Level**")
+        st.write(concept.get("cognitive_level", "—"))
 
-# ----------------------------
-# Mark as learned (grade-scoped)
-# ----------------------------
-if selected_concept:
+    # -------- Mark as learned --------
     learned = selected_concept in st.session_state.learned_concepts[grade]
 
     checked = st.sidebar.checkbox(
@@ -236,18 +236,19 @@ if selected_concept:
     else:
         st.session_state.learned_concepts[grade].discard(selected_concept)
 
-    # ----------------------------
-    # Activities (lightweight)
-    # ----------------------------
+    # -------- Activity details dropdown --------
     linked_activities = [
         a for a in activities
         if a.get("parent_concept") == selected_concept
     ]
 
-    with st.sidebar.expander(f"🧪 Learning Activities ({len(linked_activities)})"):
+    with st.sidebar.expander(f"🧪 Activity Details ({len(linked_activities)})"):
         if linked_activities:
             for a in linked_activities:
-                st.write(f"• {a['activity_name']}")
+                st.markdown(f"**{a.get('activity_name', '—')}**")
+                st.write(f"• Activity Type: {a.get('activity_type', '—')}")
+                st.write(f"• Learning Goal: {a.get('learning_goal', '—')}")
+                st.markdown("---")
         else:
             st.write("No activities linked to this concept.")
 
